@@ -14,6 +14,19 @@ from statistics import mean, variance, stdev
 from tqdm import tqdm
 from setproctitle import setproctitle as ptitle
 
+from loguru import logger
+# logger.remove()
+# logger.add(sys.stdout, level="INFO")
+# logger.add(sys.stdout, level="SUCCESS")
+# logger.add(sys.stdout, level="WARNING")
+
+# Integrate Tensorboard (for PyTorch)
+# https://pytorch.org/tutorials/recipes/recipes/tensorboard_with_pytorch.html
+# Writer will output to ./runs/ directory by default.
+import torch
+from torch.utils.tensorboard import SummaryWriter
+writer = SummaryWriter()
+
 
 def min_max(x, mins, maxs, axis=None):
     result = (x - mins)/(maxs - mins)
@@ -117,9 +130,12 @@ if __name__ == '__main__':
     if gpu_id >= 0:
         torch.cuda.manual_seed(args.seed)
 
+
     saved_state = torch.load(
         '{0}{1}.dat'.format(args.load_model_dir, args.load_model),
         map_location=lambda storage, loc: storage)
+    # logger.info(f"1) Load saved_state:{saved_state}")
+    logger.info(f"1) Load saved_state...")
 
     env = atari_env("{}".format(args.env), env_conf, args)
     env.seed(0)
@@ -129,29 +145,44 @@ if __name__ == '__main__':
     player = Agent(None, env, args, None)
 
     if args.mask_double:
+        logger.info("   model_mask_double")
         from models.model_mask_double import A3C
     elif args.mask_single_p:
+        logger.info("   model_mask_single_policy")
         from models.model_mask_single_policy import A3C
     elif args.mask_single_v:
+        logger.info("   model_mask_single_value")
         from models.model_mask_single_value import A3C
     else:
         from models.model import A3C
     player.model = A3C(args, player.env.observation_space.shape[0],
                         player.env.action_space)
     player.gpu_id = gpu_id
+
+    if torch.cuda.is_available():
+        logger.info(f"  GPU current_device: {torch.cuda.current_device()}")
+
     if gpu_id >= 0:
         with torch.cuda.device(gpu_id):
             player.model = player.model.cuda()
 
     if gpu_id >= 0:
         with torch.cuda.device(gpu_id):
+            logger.info(f"  Loading saved_state WITH GPU")
             player.model.load_state_dict(saved_state)
     else:
+        logger.info(f"  Loading saved_state NO GPU")
         player.model.load_state_dict(saved_state)
 
     player.model.eval()
-    print('Total params: %.2fM' % (sum(p.numel() for p in player.model.parameters())/1000000.0))
+    logger.info('Total params: %.2fM' % (sum(p.numel() for p in player.model.parameters())/1000000.0))
 
+    # Throw some debug statements
+    logger.info(f"2) Starting training episodes:{args.num_episodes}")
+    if (args.mask_single_p or args.mask_double) and args.image:
+        logger.info(f"  Visualize Policy attn mechanisms AND save images")
+    if (args.mask_single_v or args.mask_double) and args.image:
+        logger.info(f"  Visualize Value attn mechanisms AND save images")
 
     scores = []
     for i_episode in tqdm(range(args.num_episodes)):
@@ -159,10 +190,12 @@ if __name__ == '__main__':
         if not path.exists(raw_save_dir):
             os.mkdir(raw_save_dir)
         if (args.mask_single_p or args.mask_double) and args.image:
+            # logger.info(f"  Visualize Policy attn mechanisms AND save images")
             att_p_save_dir = path.join(args.load_model, 'episode{}_att_p'.format(i_episode))
             if not path.exists(att_p_save_dir):
                 os.mkdir(att_p_save_dir)
         if (args.mask_single_v or args.mask_double) and args.image:
+            # logger.info(f"  Visualize Value attn mechanisms AND save images")
             att_v_save_dir = path.join(args.load_model, 'episode{}_att_v'.format(i_episode))
             if not path.exists(att_v_save_dir):
                 os.mkdir(att_v_save_dir)
@@ -293,7 +326,7 @@ if __name__ == '__main__':
                     att_v_save_path = path.join(att_v_save_dir, 'att_v_{0:06d}.png'.format(i))
                     cv2.imwrite(att_v_save_path, att_map_v)
 
-    print('# of test :', num_tests)
-    print("Time {0}, length {1}, score:{2} mean:{3:.2f} variance:{4:.2f} stdev:{5:.2f} max:{6}".
+    logger.info('# of test :', num_tests)
+    logger.info("Time {0}, length {1}, score:{2} mean:{3:.2f} variance:{4:.2f} stdev:{5:.2f} max:{6}".
             format(time.strftime("%Hh %Mm %Ss", time.gmtime(time.time() - start_time)),
                     player.eps_len, reward_sum, score_mean, score_variance, score_stdev, reward_max))
