@@ -6,6 +6,7 @@
 	
 # conda init bash
 # conda create --name conda36-maskattn python=3.6.8
+# conda create --name conda39-maskattn python=3.9
 # conda activate conda39-maskattn
 # pip install -r requirements.txt
 # conda deactivate
@@ -17,5 +18,5 @@
 echo "Setting up dectransformer Environment..."
 source activate base	
 conda deactivate
-conda activate conda36-maskattn
+conda activate conda39-maskattn
 echo "$PYTHON_PATH"
