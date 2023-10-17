@@ -143,7 +143,10 @@ if __name__ == '__main__':
     num_tests = 0
     start_time = time.time()
     reward_total_sum = 0
+
+    logger.info(f"   type:{type(env)} env:{env}")
     player = Agent(None, env, args, None)
+    logger.info(f"   type:{type(player.env)} player.env:{player.env}")
 
     if args.mask_double:
         logger.info("   model_mask_double")
@@ -210,9 +213,17 @@ if __name__ == '__main__':
         fv = open(value_info, 'w')
 
         in_state, conf = player.env.reset()
+        logger.info(f"  player.env.reset() type:{type(in_state)} in_state:{in_state} len(conf):{len(conf)} len(conf[0]):{len(conf[0])} ")
+
         player.state = torch.from_numpy(in_state).float()
+
+        #-----------------------------------------
+        # player.visualizer is the image snapshot of the game
         player.visualizer = conf[0]
+        logger.info(f"  player.visualizer type:{type(player.visualizer)} ")
+        logger.info(f"  Shape of initial state is {conf[0].shape}")
         # logger.info(f"  player.visualizer:{player.visualizer}")
+        #-----------------------------------------
 
         if gpu_id >= 0:
             with torch.cuda.device(gpu_id):
