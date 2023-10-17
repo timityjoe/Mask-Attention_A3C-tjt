@@ -6,19 +6,27 @@ from gym.spaces.box import Box
 from cv2 import resize
 import random
 
+from loguru import logger
+# logger.remove()
+# logger.add(sys.stdout, level="INFO")
+# logger.add(sys.stdout, level="SUCCESS")
+# logger.add(sys.stdout, level="WARNING")
 
 def atari_env(env_id, env_conf, args):
     print(env_id)
     env = gym.make(env_id)
     if 'NoFrameskip' in env_id:
+        logger.info("NoFrameskip")
         assert 'NoFrameskip' in env.spec.id
         env._max_episode_steps = args.max_episode_length * args.skip_rate
         env = NoopResetEnv(env, noop_max=30)
         env = MaxAndSkipEnv(env, skip=args.skip_rate)
     else:
+        logger.info("Frameskip max_episode_length:{args.max_episode_length}")
         env._max_episode_steps = args.max_episode_length
     env = EpisodicLifeEnv(env)
     if 'FIRE' in env.unwrapped.get_action_meanings():
+        logger.info("FIRE")
         env = FireResetEnv(env)
     env._max_episode_steps = args.max_episode_length
     env = AtariRescale(env, env_conf)
@@ -81,6 +89,7 @@ class NoopResetEnv(gym.Wrapper):
         assert env.unwrapped.get_action_meanings()[0] == 'NOOP'
 
     def reset(self, **kwargs):
+        logger.info("NoopResetEnv::reset")
         """ Do no-op action for a number of steps in [1, noop_max]."""
         self.env.reset(**kwargs)
         if self.override_num_noops is not None:
@@ -93,6 +102,9 @@ class NoopResetEnv(gym.Wrapper):
             obs, _, done, _ = self.env.step(self.noop_action)
             if done:
                 obs = self.env.reset(**kwargs)
+
+        logger.info(f"  len(obs):{len(obs)}")
+
         return obs
 
     def step(self, ac):
@@ -107,6 +119,7 @@ class FireResetEnv(gym.Wrapper):
         assert len(env.unwrapped.get_action_meanings()) >= 3
 
     def reset(self, **kwargs):
+        logger.info("FireResetEnv::reset")
         self.env.reset(**kwargs)
         obs, _, done, _ = self.env.step(1)
         if done:
@@ -144,6 +157,7 @@ class EpisodicLifeEnv(gym.Wrapper):
         return obs, reward, done, self.was_real_done
 
     def reset(self, **kwargs):
+        logger.info("EpisodicLifeEnv::reset")
         """Reset only when lives are exhausted.
         This way all states are still reachable even though lives are episodic,
         and the learner need not know about any of this behind-the-scenes.
@@ -184,4 +198,5 @@ class MaxAndSkipEnv(gym.Wrapper):
         return max_frame, total_reward, done, info
 
     def reset(self, **kwargs):
+        logger.info("MaxAndSkipEnv::reset")
         return self.env.reset(**kwargs)
