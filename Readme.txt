@@ -40,7 +40,10 @@ conda activate conda36-maskattn
 python3 experiment.py --env hopper --dataset medium --model_type dt -w
 
 python3 gym_eval.py --convlstm --mask_double --env BreakoutNoFrameskip-v4 --load-model BreakoutNoFrameskip-v4_Mask-A3C-double+ConvLSTM_best --num-episodes 100
+
 python3 gym_eval.py --convlstm --mask_double --env BreakoutNoFrameskip-v4 --load-model BreakoutNoFrameskip-v4_Mask-A3C-double+ConvLSTM_best --num-episodes 100 --gpu-ids 0 --image
+
+python3 gym_eval.py --convlstm --mask_double --env BreakoutNoFrameskip-v4 --load-model BreakoutNoFrameskip-v4_Mask-A3C-double+ConvLSTM_best --num-episodes 100 --gpu-ids 0 --render
 
 
 sh ./start_eval.sh

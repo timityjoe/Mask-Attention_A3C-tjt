@@ -14,6 +14,7 @@ from statistics import mean, variance, stdev
 from tqdm import tqdm
 from setproctitle import setproctitle as ptitle
 
+import time
 from loguru import logger
 # logger.remove()
 # logger.add(sys.stdout, level="INFO")
@@ -23,9 +24,9 @@ from loguru import logger
 # Integrate Tensorboard (for PyTorch)
 # https://pytorch.org/tutorials/recipes/recipes/tensorboard_with_pytorch.html
 # Writer will output to ./runs/ directory by default.
-import torch
-from torch.utils.tensorboard import SummaryWriter
-writer = SummaryWriter()
+# import torch
+# from torch.utils.tensorboard import SummaryWriter
+# writer = SummaryWriter()
 
 
 def min_max(x, mins, maxs, axis=None):
@@ -211,6 +212,8 @@ if __name__ == '__main__':
         in_state, conf = player.env.reset()
         player.state = torch.from_numpy(in_state).float()
         player.visualizer = conf[0]
+        # logger.info(f"  player.visualizer:{player.visualizer}")
+
         if gpu_id >= 0:
             with torch.cuda.device(gpu_id):
                 player.state = player.state.cuda()
@@ -224,6 +227,12 @@ if __name__ == '__main__':
         model_atts_v = []
         while True:
             if args.render:
+                # logger.info(f"args.render:{args.render}")
+                #-----------------------------------------
+                # Mod by Tim: Render to see whats going on..
+                # Slow the sim
+                time.sleep(0.01)
+                #----------------------------------------- 
                 player.env.render()
 
             if args.image:
@@ -238,6 +247,8 @@ if __name__ == '__main__':
             fr.write(str(img_idx) + ', ' + str(reward_sum) + '\n')
             fv.write(str(img_idx) + ', ' + str(player.values[0][0].cpu().detach().numpy().copy()) + '\n')
 
+            #--------------------------------------------------------------------------------------------------
+            # Attention Visualization (1 of 2)
             if args.image and (args.mask_single_p or args.mask_double):
                 sy, sx, sc = player.visualizer.shape
                 att_p_map = np.zeros((sy, sx))
@@ -253,6 +264,7 @@ if __name__ == '__main__':
                 model_att_v = model_att_v[0]
                 model_att_v = model_att_v.transpose(1,2,0)[np.newaxis, :, :, :]
                 model_atts_v = model_att_v if model_atts_v == [] else np.concatenate([model_atts_v,model_att_v])
+            #--------------------------------------------------------------------------------------------------
 
             np_value = player.values.cpu()
             np_value = np_value.numpy()
@@ -287,6 +299,8 @@ if __name__ == '__main__':
                 player.eps_len = 0
                 break
 
+        #--------------------------------------------------------------------------------------------------
+        # Attention Visualization (2 of 2)
         if args.image and (args.mask_single_p or args.mask_single_v or args.mask_double):
             # normalization (mask-attention)
             if args.mask_single_p or args.mask_double:
@@ -325,6 +339,7 @@ if __name__ == '__main__':
                     #att_map_v = cv2.addWeighted(raw_img, 1.0, att_map_v, 1.0, 0)
                     att_v_save_path = path.join(att_v_save_dir, 'att_v_{0:06d}.png'.format(i))
                     cv2.imwrite(att_v_save_path, att_map_v)
+        #--------------------------------------------------------------------------------------------------
 
     logger.info('# of test :', num_tests)
     logger.info("Time {0}, length {1}, score:{2} mean:{3:.2f} variance:{4:.2f} stdev:{5:.2f} max:{6}".
