@@ -13,8 +13,9 @@ from loguru import logger
 # logger.add(sys.stdout, level="WARNING")
 
 def atari_env(env_id, env_conf, args):
-    print(env_id)
+    logger.info(f"env_id:{env_id}")
     env = gym.make(env_id)
+
     if 'NoFrameskip' in env_id:
         logger.info("NoFrameskip")
         assert 'NoFrameskip' in env.spec.id

@@ -139,6 +139,8 @@ if __name__ == '__main__':
     logger.info(f"1) Load saved_state...")
 
     env = atari_env("{}".format(args.env), env_conf, args)
+    logger.info(f"env:{env}")
+
     env.seed(0)
     num_tests = 0
     start_time = time.time()

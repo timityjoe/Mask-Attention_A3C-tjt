@@ -8,7 +8,7 @@
 # conda create --name conda36-maskattn python=3.6.8
 # conda create --name conda39-maskattn python=3.9
 # conda activate conda39-maskattn
-# pip install -r requirements.txt
+# pip install -r requirements-setup.txt
 # conda deactivate
 # conda clean --all	# Purge cache and unused apps
 # condo info
